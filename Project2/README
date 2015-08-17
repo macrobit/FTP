@@ -1,0 +1,78 @@
+/////////////////////////////////////////////////////////////////////
+                    CSE 533 project2 report
+
+Team member:
+     Yuhao Fei (109230957) 
+     Xuyang Song (109276825)
+
+////////////////////////////////////////////////////////////////////
+
+This project contains 10 files,
+Files description:
+1.  client.c : client application.
+2.  server.c : server application.
+3.  get_ifi.h: header file for get_ifi.c which defines functions for get_ifi.c.
+4.  get_ifi.c: contains functions which are used to print interface infomation.
+5.  get_ifi_info_plus.c: contains function get_ifi_info_plus and Get_ifi_info_plus
+    used by get_ifi.c.
+6.  data.h   : defines functions used in data.c.
+7.  data.c   : contains functions about the protocol.
+8.  rtt.c    : the code realizes rtt function.
+9.  unprtt.h : the header file for rtt.c.
+10. unpifiplus.h: the header file defines struct ifi_info.
+
+--------------------------------------------------------------------
+The modification in ensure that only unicast addresses are bound:
+--------------------------------------------------------------------
+-server.c
+To ensure that only unicast addresses are bound, in server.c line 404 to 420, we use 
+//404     if (!(ifi->ifi_flags & IFF_UP))
+//405         continue;
+to make sure we only bind the IP addresses of up interfaces. 
+
+//413         memcpy(&servaddr, ifi->ifi_addr, sizeof(servaddr));
+//414         servaddr.sin_port = htons(port);
+//415         Bind(sockfds[count], (SA *) &servaddr, sizeof(servaddr));
+We only bind the address in ifi->ifi_addr which can only be unicast address.
+
+----------------------------------------------------------------------
+Implementation of the array of socket structure:
+----------------------------------------------------------------------
+We did not design a new structure, but use struct ifi_info and an array of socket directly.
+
+----------------------------------------------------------------------
+The modification to the code of Section 22.5
+----------------------------------------------------------------------
+We modified two files: lib/unprtt.h and lib/rtt.c.
+
+-unprtt.h:
+
+1. We changed three attributes' type from float to int.
+ 7   int       rtt_rtt;    
+ 8   int       rtt_srtt;  
+ 9   int       rtt_rttvar;
+
+2. We changed min retransmit timeout value, max retransmit timeout value, and max times to retransmit.
+ 15 #define RTT_RXTMIN      1  
+ 16 #define RTT_RXTMAX      3  
+ 17 #define RTT_MAXNREXMT   12  
+
+-rtt.c:
+
+1. We change the time unit from secend to milisecond:
+ 32     ptr->rtt_rttvar = 750; // 0.75 s = 750 ms
+ 33     ptr->rtt_rto = rtt_minmax(RTT_RTOCALC(ptr)/1000.0);
+
+2. We made a little modification for rtt_start() function:
+ 62 uint32_t
+ 63 rtt_start(struct rtt_info *ptr)
+ 64 {
+ 65     return (uint32_t)(ptr->rtt_rto*1000);
+ 66         /* 4return value can be used as: alarm(rtt_start(&foo)) */
+ 67 }
+
+3. We made a little modification in rtt_stop() function:
+ 85     ptr->rtt_rtt = ms;      /* measured RTT in miliseconds */
+101     ptr->rtt_rto = rtt_minmax(RTT_RTOCALC(ptr)/1000.0);
+
+
